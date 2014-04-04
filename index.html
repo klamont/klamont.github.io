@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>IT Hell</title>
+  
+  <script type='text/javascript' src='/js/lib/dummy.js'></script>
+  
+  
+  
+  <link rel="stylesheet" type="text/css" href="/css/result-light.css">
+  
+    
+      <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    
+  
+  <style type='text/css'>
+    
+  </style>
+  
+
+
+<script type='text/javascript'>//<![CDATA[ 
+window.onload=function(){
+/*IT Hell v1.5*/
+
+//variables
+var clicks = 0; //lifetime clicks
+var auto_clicks = 0; //automatically click once per second
+var icost = 1; //cost of interns
+var mcost = 1; //cost of monitors
+var tcost = 1000; //cost of promotions 
+var rcost = 10000; //cost of recruiter
+var acost = 100000; //cost of accountants
+var recruiters = 0; //recruiters
+var accountants = 0; //accountants
+var interest_rate = 0;
+var upgrade_speed = 0; //cost of coffee
+var click_rate = 1000; //ms between each autoclick
+var recruit_rate = 60000; //ms between recruitments
+var compound_rate = 300000; //ms between interest payments
+var interval_auto; //storing our interval here so we can update it
+var interval_recruit; //time between recruits
+var interval_interest; //interval for interest
+var manual_click = 1; //manual click rate
+var dollars = 0; //dollars in budget
+var dollarsPerTicket = 1; //dollars per ticket
+var tier = 0; //set tier level
+
+
+//functions
+
+//make #s prettier, Thanks StackOverflow!
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+
+function update_total_clicks() { //updates the number of clicks   
+    var e = document.getElementById("total_clicks");
+    e.innerHTML = numberWithCommas(clicks);
+    var e2 = document.getElementById("dollars");
+    e2.innerHTML = numberWithCommas(parseFloat(dollars).toFixed(0));
+}
+
+function buy_something(c, button) {
+    if (dollars < c) {
+        button.className = 'btn btn-danger';
+        setTimeout(function () {
+            var e = document.getElementsByClassName("btn-danger")[0];
+            e.className = 'btn btn-success';
+        }, 1000);
+        return false;
+    }
+    dollars -= c;
+    return true;
+}
+
+function update_workers() {
+    var e2 = document.getElementById("time_period");
+    e2.innerHTML = parseFloat(click_rate / 1000.0).toFixed(2);
+    clearInterval(interval_auto);
+    interval_auto = setInterval(function () {
+        clicks += auto_clicks;
+        dollars = dollars + auto_clicks * dollarsPerTicket;
+        update_total_clicks();
+    }, click_rate);
+}
+
+//recruiters call this to add interns
+function update_interns() {
+    clearInterval(interval_recruit);
+    interval_recruit = setInterval(function () {
+        auto_clicks += recruiters;
+        icost = parseFloat(Math.pow(1.5, auto_clicks).toFixed(0)); //new cost
+        update_total_clicks();
+
+        var e = document.getElementById("clicks_per_second");
+        e.innerHTML = auto_clicks;
+        var e2 = document.getElementById("intern_click");
+        e2.innerHTML = 'Hire for $' + numberWithCommas(icost);
+        var e2 = document.getElementById("intern_level");
+        e2.innerHTML = 'lvl  ' + auto_clicks;
+
+    }, recruit_rate);
+
+}
+
+//accountants call this to update your balance
+function update_dollars() {
+    clearInterval(interval_interest);
+    interval_interest = setInterval(function () {
+        dollars = dollars * (1 + interest_rate);
+        update_total_clicks();
+    }, compound_rate);
+
+}
+
+
+
+//click events
+document.getElementById("click").onclick = function () {
+    clicks += manual_click;
+    dollars = dollars + manual_click * dollarsPerTicket;
+    update_total_clicks(); //updates the text
+};
+
+
+document.getElementById("monitor_click").onclick = function () {
+    if (!buy_something(mcost, this)) return;
+    manual_click++;
+    mcost = parseFloat(Math.pow(1.2, manual_click).toFixed(0)); //new cost
+    update_total_clicks();
+
+    var e = document.getElementById("monitor_level");
+    e.innerHTML = manual_click;
+    var e2 = document.getElementById("monitor_click");
+    e2.innerHTML = 'Add monitor for $' + numberWithCommas(mcost);
+    var e3 = document.getElementById("manual_click");
+    e3.innerHTML = manual_click + ' tickets';
+};
+
+document.getElementById("intern_click").onclick = function () {
+    if (!buy_something(icost, this)) return;
+    auto_clicks++;
+    icost = parseFloat(Math.pow(1.5, auto_clicks).toFixed(0)); //new cost
+    update_total_clicks();
+
+    var e = document.getElementById("clicks_per_second");
+    e.innerHTML = auto_clicks;
+    var e2 = document.getElementById("intern_click");
+    e2.innerHTML = 'Hire for $' + numberWithCommas(icost);
+    var e2 = document.getElementById("intern_level");
+    e2.innerHTML = 'lvl  ' + auto_clicks;
+};
+
+document.getElementById("tier_click").onclick = function () {
+    if (!buy_something(tcost, this)) return;
+    tier++;
+    dollarsPerTicket++;
+    tcost = tcost * 2; //new cost
+    update_total_clicks();
+
+    var e = document.getElementById("tier_level");
+    e.innerHTML = tier;
+    var e2 = document.getElementById("tier_click");
+    e2.innerHTML = 'Promote your team for $' + numberWithCommas(tcost);
+    var e3 = document.getElementById("dollarsPerTicket");
+    e3.innerHTML = dollarsPerTicket;
+};
+
+document.getElementById("recruiter_click").onclick = function () {
+    if (!buy_something(rcost, this)) return;
+    recruiters++;
+    rcost *= 2;
+    update_interns();
+    update_total_clicks();
+    var e = document.getElementById("recruiter_level");
+    e.innerHTML = recruiters;
+    var e2 = document.getElementById("recruiter_click");
+    e2.innerHTML = 'Add recruiter for $' + numberWithCommas(rcost);
+};
+
+document.getElementById("accountant_click").onclick = function () {
+    if (!buy_something(acost, this)) return;
+    accountants++;
+    acost *= 2;
+    interest_rate += .05;
+    update_dollars();
+    update_total_clicks();
+    var e = document.getElementById("accountant_level");
+    e.innerHTML = accountants;
+    var e2 = document.getElementById("accountant_click");
+    e2.innerHTML = 'Hire Accountant for $' + numberWithCommas(acost);
+    var e3 = document.getElementById("interest_rate");
+    e3.innerHTML = parseFloat(interest_rate).toFixed(2)*100 + "%";
+
+};
+
+document.getElementById("speed_click").onclick = function () {
+    var upgrade_cost = (Math.pow(2, upgrade_speed)) * 100;
+    if (!buy_something(upgrade_cost, this)) return;
+    upgrade_speed++;
+    click_rate = click_rate * .90;
+    var e2 = document.getElementById("speed_click");
+    e2.innerHTML = 'Buy for $' + numberWithCommas(((Math.pow(2, upgrade_speed)) * 100));
+    var e2 = document.getElementById("speed_level");
+    e2.innerHTML = 'lvl  ' + upgrade_speed;
+    update_workers();
+};
+
+//start our autoclickers
+update_workers();
+}//]]>  
+
+</script>
+
+
+</head>
+<body>
+  <div class="container">
+     <h1>IT Hell  <small>A disturbingly realistic game</small></h1>
+
+    <button id="click" type="button" class="btn btn-primary btn-lg btn-block">Work <span id="manual_click">1<span /> tickets</button>
+    <hr>
+    <p>
+        Budget:  $<span id="dollars">0</span>
+        <br>Interest Rate: <span id="interest_rate">0</span>
+
+        <br />Tickets closed: <span id="total_clicks">0</span>
+
+        <br />Interns close <span id="clicks_per_second">0</span> tickets every <span id="time_period">1.00</span> second(s)
+        <br />Dollars per ticket: <span id="dollarsPerTicket">1</span>
+
+        <br />
+        </p>
+         <h3>Efficiencies</h3>
+
+        <table class="table">
+            <tr>
+                <td>Monitors: <small id="monitor_level">1</small>
+                    <br>Monitors let you close multiple tickets with one click.</td>
+                <td>
+                    <button id="monitor_click" type="button" class="btn btn-success">Add monitor for $1</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Interns: <small id="intern_level">0</small>
+                    <br>Interns will close your tickets for you!</td>
+                <td>
+                    <button id="intern_click" type="button" class="btn btn-success">Hire for $1</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Coffee: <small id="speed_level">0</small>
+                    <br>Speed up interns by 10%</td>
+                <td>
+                    <button id="speed_click" type="button" class="btn btn-success">Buy for $100</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Tier: <small id="tier_level">0</small>
+                    <br>Working in a higher tier provides more money per ticket.</td>
+                <td>
+                    <button id="tier_click" type="button" class="btn btn-success">Upgrade to next tier for $1000</button>
+                </td>
+            </tr>
+            <tr></tr>
+            <tr>
+                <td>Recruiters: <small id="recruiter_level">0</small>
+                    <br>Recruiters will automatically bring in free interns.</td>
+                <td>
+                    <button id="recruiter_click" type="button" class="btn btn-success">Hire Recruiter for $10,000</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Accountants: <small id="accountant_level">0</small>
+                    <br>Accountants will let you earn 5% per accountant, every 5 minutes.</td>
+                <td>
+                    <button id="accountant_click" type="button" class="btn btn-success">Hire Accountant for $100,000</button>
+                </td>
+            </tr>
+        </table>
+</div>
+  
+</body>
+
+
+</html>
+
+
